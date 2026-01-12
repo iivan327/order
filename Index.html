@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<title>Baseball Lineup Builder</title>
+<style>
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont;
+    background: #f5f5f5;
+    padding: 20px;
+  }
+  h2 { margin-top: 0; }
+  .container {
+    display: flex;
+    gap: 20px;
+  }
+  .box {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    width: 300px;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+    min-height: 200px;
+    border: 1px dashed #ccc;
+  }
+  li {
+    padding: 8px;
+    margin: 5px;
+    background: #e9e9e9;
+    border-radius: 4px;
+    cursor: grab;
+  }
+  input {
+    width: 100%;
+    padding: 6px;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+
+<body>
+<h1>⚾ 棒球棒次排版</h1>
+
+<div class="container">
+  <div class="box">
+    <h2>Roster</h2>
+    <input id="playerInput" placeholder="輸入球員名字" />
+    <button onclick="addPlayer()">加入</button>
+    <ul id="roster" ondragover="allowDrop(event)" ondrop="drop(event)"></ul>
+  </div>
+
+  <div class="box">
+    <h2>Lineup</h2>
+    <ul id="lineup" ondragover="allowDrop(event)" ondrop="drop(event)"></ul>
+  </div>
+</div>
+
+<script>
+let draggedItem = null;
+
+function addPlayer() {
+  const input = document.getElementById("playerInput");
+  if (!input.value) return;
+
+  const li = createPlayer(input.value);
+  document.getElementById("roster").appendChild(li);
+  input.value = "";
+}
+
+function createPlayer(name) {
+  const li = document.createElement("li");
+  li.textContent = name;
+  li.draggable = true;
+
+  li.ondragstart = () => draggedItem = li;
+  return li;
+}
+
+function allowDrop(e) {
+  e.preventDefault();
+}
+
+function drop(e) {
+  e.preventDefault();
+  if (draggedItem) {
+    e.target.closest("ul").appendChild(draggedItem);
+    draggedItem = null;
+  }
+}
+</script>
+</body>
+</html>
