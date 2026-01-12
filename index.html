@@ -1,9 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>棒球棒次表</title>
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<style>
+* {
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  overflow: hidden;
+  font-family: system-ui;
+  background: #f3f3f3;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+.panel {
+  padding: 10px;
+  background: white;
+}
+
+.roster {
+  width: 40%;
+  border-right: 2px solid #ddd;
+}
+
+.lineup {
+  width: 60%;
+}
+
+h2 {
+  margin: 6px 0;
+  font-size: 16px;
+}
+
+.list {
+  height: calc(100% - 28px);
+}
+
+.item {
+  background: #e5e5e5;
+  padding: 12px;
+  margin: 6px 0;
+  border-radius: 6px;
+  text-align: center;
+  touch-action: none;
+}
+
+.slot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.order {
+  width: 18px;
+  font-weight: bold;
+}
+
+.name {
+  flex: 1;
+  background: #dcdcdc;
+  padding: 6px;
+  border-radius: 4px;
+}
+
+select {
+  font-size: 14px;
+}
+
+.ghost {
+  position: fixed;
+  pointer-events: none;
+  background: #bdbdbd;
+  padding: 10px;
+  border-radius: 6px;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- ROSTER -->
+  <div class="panel roster">
+    <h2>Roster</h2>
+    <div class="list" id="roster"></div>
+  </div>
+
+  <!-- LINEUP -->
+  <div class="panel lineup">
+    <h2>Lineup 1–9</h2>
+    <div class="list" id="lineup"></div>
+
+    <h2>投手（第10人）</h2>
+    <div class="item slot drop" id="pitcher">
+      <div class="order">P</div>
+      <div class="name"></div>
+      <select>
+        <option>P</option>
+      </select>
+    </div>
+  </div>
+
+</div>
+
 <script>
 const rosterNames = [
   "陳晨威","陳傑憲","S Fairchild","柯敬賢","宋晟睿",
   "林安可","邱志呈","林子偉","張育成","李灝宇",
   "鄭宗哲","J Long","江坤宇","吳念庭"
 ];
+
+const positions = ["","P","C","1B","2B","3B","SS","LF","CF","RF","DH"];
 
 let dragged = null;
 let ghost = null;
@@ -27,7 +151,9 @@ function createLineup() {
     d.innerHTML = `
       <div class="order">${i}</div>
       <div class="name"></div>
+      <select>${positions.map(p=>`<option>${p}</option>`).join("")}</select>
     `;
+    enableDrop(d);
     l.appendChild(d);
   }
 }
@@ -54,6 +180,14 @@ function enableDrag(el) {
   });
 }
 
+function enableDrop(el) {
+  el.addEventListener("pointerup", e => {
+    if (!dragged) return;
+    handleDrop(e);
+    cleanup();
+  });
+}
+
 function moveGhost(e) {
   ghost.style.left = e.clientX + "px";
   ghost.style.top = e.clientY + "px";
@@ -61,19 +195,21 @@ function moveGhost(e) {
 
 function handleDrop(e) {
   const target = document.elementFromPoint(e.clientX, e.clientY);
-  const slot = target?.closest(".drop");
-  if (!slot) return;
+  const drop = target?.closest(".drop");
+  if (!drop) return;
 
-  const nameBox = slot.querySelector(".name");
+  const nameBox = drop.querySelector(".name");
   if (!nameBox) return;
 
-  if (nameBox.textContent) {
-    const temp = nameBox.textContent;
-    nameBox.textContent = dragged.textContent;
-    dragged.textContent = temp;
-  } else {
-    nameBox.textContent = dragged.textContent;
-    dragged.remove();
+  if (dragged.classList.contains("drag")) {
+    if (nameBox.textContent) {
+      const temp = nameBox.textContent;
+      nameBox.textContent = dragged.textContent;
+      dragged.textContent = temp;
+    } else {
+      nameBox.textContent = dragged.textContent;
+      dragged.remove();
+    }
   }
 }
 
@@ -86,3 +222,6 @@ function cleanup() {
 createRoster();
 createLineup();
 </script>
+
+</body>
+</html>
