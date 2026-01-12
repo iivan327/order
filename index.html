@@ -12,6 +12,7 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
   box-sizing: border-box;
   -webkit-user-select: none;
   user-select: none;
+  touch-action: none;
 }
 
 body {
@@ -56,7 +57,6 @@ h2 {
   margin: 6px 0;
   border-radius: 6px;
   text-align: center;
-  touch-action: none;
 }
 
 .slot {
@@ -98,9 +98,9 @@ select {
 <div class="app">
 
   <!-- ROSTER -->
-  <div class="panel roster">
+  <div class="panel roster drop" id="roster">
     <h2>Roster</h2>
-    <div class="list" id="roster"></div>
+    <div class="list"></div>
   </div>
 
   <!-- LINEUP -->
@@ -109,37 +109,38 @@ select {
     <div class="list" id="lineup"></div>
 
     <h2>投手（第10人）</h2>
-    <div class="item slot drop" id="pitcher">
+    <div class="item slot drop" data-pitcher>
       <div class="order">P</div>
       <div class="name"></div>
-      <select>
-        <option>P</option>
-      </select>
+      <select><option>P</option></select>
     </div>
   </div>
 
 </div>
 
 <script>
+document.addEventListener("dblclick", e => e.preventDefault());
+
 const rosterNames = [
   "陳晨威","陳傑憲","S Fairchild","柯敬賢","宋晟睿",
-  "林安可","邱志呈","林子偉","張育成","李灝宇",
-  "鄭宗哲","J Long","江坤宇","吳念庭"
+  "林安可","邱智呈","林子偉","張育成","李灝宇",
+  "鄭宗哲","J Long","江坤宇","吳念庭","吉力吉撈","林家正","戴培峰"
 ];
 
 const positions = ["","P","C","1B","2B","3B","SS","LF","CF","RF","DH"];
 
 let dragged = null;
 let ghost = null;
+let source = null;
 
 function createRoster() {
-  const r = document.getElementById("roster");
+  const list = document.querySelector("#roster .list");
   rosterNames.forEach(name => {
     const d = document.createElement("div");
-    d.className = "item drag";
+    d.className = "item";
     d.textContent = name;
-    enableDrag(d);
-    r.appendChild(d);
+    enableDrag(d, "roster");
+    list.appendChild(d);
   });
 }
 
@@ -153,14 +154,15 @@ function createLineup() {
       <div class="name"></div>
       <select>${positions.map(p=>`<option>${p}</option>`).join("")}</select>
     `;
-    enableDrop(d);
+    enableSlotDrag(d);
     l.appendChild(d);
   }
 }
 
-function enableDrag(el) {
+function enableDrag(el, from) {
   el.addEventListener("pointerdown", e => {
     dragged = el;
+    source = from;
 
     ghost = el.cloneNode(true);
     ghost.className = "ghost";
@@ -170,22 +172,29 @@ function enableDrag(el) {
     el.setPointerCapture(e.pointerId);
   });
 
-  el.addEventListener("pointermove", e => {
-    if (ghost) moveGhost(e);
-  });
-
-  el.addEventListener("pointerup", e => {
-    handleDrop(e);
-    cleanup();
-  });
+  el.addEventListener("pointermove", e => ghost && moveGhost(e));
+  el.addEventListener("pointerup", e => handleDrop(e));
 }
 
-function enableDrop(el) {
-  el.addEventListener("pointerup", e => {
-    if (!dragged) return;
-    handleDrop(e);
-    cleanup();
+function enableSlotDrag(slot) {
+  const nameBox = slot.querySelector(".name");
+  slot.addEventListener("pointerdown", e => {
+    if (!nameBox.textContent) return;
+
+    dragged = document.createElement("div");
+    dragged.textContent = nameBox.textContent;
+    source = slot;
+
+    ghost = dragged.cloneNode(true);
+    ghost.className = "ghost";
+    document.body.appendChild(ghost);
+    moveGhost(e);
+
+    nameBox.textContent = "";
   });
+
+  slot.addEventListener("pointermove", e => ghost && moveGhost(e));
+  slot.addEventListener("pointerup", e => handleDrop(e));
 }
 
 function moveGhost(e) {
@@ -194,29 +203,61 @@ function moveGhost(e) {
 }
 
 function handleDrop(e) {
+  if (!dragged) return;
+
   const target = document.elementFromPoint(e.clientX, e.clientY);
   const drop = target?.closest(".drop");
-  if (!drop) return;
+
+  if (!drop) {
+    restore();
+    cleanup();
+    return;
+  }
+
+  // 丟回 roster
+  if (drop.id === "roster") {
+    document.querySelector("#roster .list").appendChild(makeRosterItem(dragged.textContent));
+    cleanup();
+    return;
+  }
 
   const nameBox = drop.querySelector(".name");
   if (!nameBox) return;
 
-  if (dragged.classList.contains("drag")) {
-    if (nameBox.textContent) {
-      const temp = nameBox.textContent;
-      nameBox.textContent = dragged.textContent;
-      dragged.textContent = temp;
-    } else {
-      nameBox.textContent = dragged.textContent;
-      dragged.remove();
+  if (nameBox.textContent) {
+    const temp = nameBox.textContent;
+    nameBox.textContent = dragged.textContent;
+    dragged.textContent = temp;
+
+    if (source === "roster") {
+      document.querySelector("#roster .list").appendChild(makeRosterItem(dragged.textContent));
     }
+  } else {
+    nameBox.textContent = dragged.textContent;
+  }
+
+  cleanup();
+}
+
+function makeRosterItem(name) {
+  const d = document.createElement("div");
+  d.className = "item";
+  d.textContent = name;
+  enableDrag(d, "roster");
+  return d;
+}
+
+function restore() {
+  if (source && source.classList?.contains("slot")) {
+    source.querySelector(".name").textContent = dragged.textContent;
   }
 }
 
 function cleanup() {
-  if (ghost) ghost.remove();
+  ghost && ghost.remove();
   ghost = null;
   dragged = null;
+  source = null;
 }
 
 createRoster();
