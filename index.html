@@ -1,120 +1,3 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-<meta charset="UTF-8">
-<title>棒球棒次表</title>
-
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<style>
-* {
-  box-sizing: border-box;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-body {
-  margin: 0;
-  height: 100vh;
-  overflow: hidden;
-  font-family: system-ui;
-  background: #f3f3f3;
-}
-
-.app {
-  display: flex;
-  height: 100vh;
-}
-
-.panel {
-  padding: 10px;
-  background: white;
-}
-
-.roster {
-  width: 40%;
-  border-right: 2px solid #ddd;
-}
-
-.lineup {
-  width: 60%;
-}
-
-h2 {
-  margin: 6px 0;
-  font-size: 16px;
-}
-
-.list {
-  height: calc(100% - 30px);
-}
-
-.item {
-  background: #e5e5e5;
-  padding: 12px;
-  margin: 6px 0;
-  border-radius: 6px;
-  text-align: center;
-  touch-action: none;
-}
-
-.slot {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.order {
-  width: 18px;
-  font-weight: bold;
-}
-
-.name {
-  flex: 1;
-  background: #dcdcdc;
-  padding: 6px;
-  border-radius: 4px;
-}
-
-.dragging {
-  opacity: 0.4;
-}
-
-.ghost {
-  position: fixed;
-  pointer-events: none;
-  background: #bbb;
-  padding: 10px;
-  border-radius: 6px;
-  transform: translate(-50%, -50%);
-  z-index: 9999;
-}
-</style>
-</head>
-
-<body>
-
-<div class="app">
-
-  <div class="panel roster">
-    <h2>Roster</h2>
-    <div class="list" id="roster"></div>
-  </div>
-
-  <div class="panel lineup">
-    <h2>Lineup</h2>
-    <div class="list" id="lineup"></div>
-
-    <h2>投手</h2>
-    <div class="item slot drop">
-      <div class="order">P</div>
-      <div class="name"></div>
-    </div>
-  </div>
-
-</div>
-
 <script>
 const rosterNames = [
   "陳晨威","陳傑憲","S Fairchild","柯敬賢","宋晟睿",
@@ -152,13 +35,12 @@ function createLineup() {
 function enableDrag(el) {
   el.addEventListener("pointerdown", e => {
     dragged = el;
-    el.classList.add("dragging");
 
     ghost = el.cloneNode(true);
     ghost.className = "ghost";
     document.body.appendChild(ghost);
-
     moveGhost(e);
+
     el.setPointerCapture(e.pointerId);
   });
 
@@ -167,10 +49,8 @@ function enableDrag(el) {
   });
 
   el.addEventListener("pointerup", e => {
-    el.classList.remove("dragging");
-    if (ghost) ghost.remove();
-    ghost = null;
-    dragged = null;
+    handleDrop(e);
+    cleanup();
   });
 }
 
@@ -179,14 +59,14 @@ function moveGhost(e) {
   ghost.style.top = e.clientY + "px";
 }
 
-document.addEventListener("pointerup", e => {
-  if (!dragged) return;
-
+function handleDrop(e) {
   const target = document.elementFromPoint(e.clientX, e.clientY);
-  const drop = target?.closest(".drop");
-  if (!drop) return;
+  const slot = target?.closest(".drop");
+  if (!slot) return;
 
-  const nameBox = drop.querySelector(".name");
+  const nameBox = slot.querySelector(".name");
+  if (!nameBox) return;
+
   if (nameBox.textContent) {
     const temp = nameBox.textContent;
     nameBox.textContent = dragged.textContent;
@@ -195,11 +75,14 @@ document.addEventListener("pointerup", e => {
     nameBox.textContent = dragged.textContent;
     dragged.remove();
   }
-});
+}
+
+function cleanup() {
+  if (ghost) ghost.remove();
+  ghost = null;
+  dragged = null;
+}
 
 createRoster();
 createLineup();
 </script>
-
-</body>
-</html>
